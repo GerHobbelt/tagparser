@@ -482,7 +482,7 @@ Mp4TagMaker::Mp4TagMaker(Mp4Tag &tag, Diagnostics &diag)
     m_ilstSize(8)
     ,
     // ensure there only one genre atom is written (prefer genre as string)
-    m_omitPreDefinedGenre(m_tag.fields().count(m_tag.hasField(Mp4TagAtomIds::Genre)))
+    m_omitPreDefinedGenre(m_tag.fields().count(m_tag.hasField(Mp4TagAtomIds::Genre)) > 0)
 {
     m_maker.reserve(m_tag.fields().size());
     for (auto &field : m_tag.fields()) {

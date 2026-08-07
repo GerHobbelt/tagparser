@@ -1523,7 +1523,7 @@ bool MediaFileInfo::removeVorbisComment()
     switch (m_containerFormat) {
     case ContainerFormat::Ogg:
         if (m_container) {
-            bool hadTags = static_cast<OggContainer *>(m_container.get())->tagCount();
+            bool hadTags = (static_cast<OggContainer *>(m_container.get())->tagCount() > 0);
             static_cast<OggContainer *>(m_container.get())->removeAllTags();
             return hadTags;
         }
