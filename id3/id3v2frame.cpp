@@ -8,7 +8,7 @@
 #include <c++utilities/conversion/stringbuilder.h>
 #include <c++utilities/conversion/stringconversion.h>
 
-#include <zlib.h>
+#include <zlib-ng.h>
 
 #include <algorithm>
 #include <cstdint>
@@ -234,7 +234,7 @@ void Id3v2Frame::parse(BinaryReader &reader, std::uint32_t version, std::uint32_
 
     // -> decompress data if compressed; otherwise just read it
     if (isCompressed()) {
-        uLongf decompressedSize = version >= 4 ? reader.readSynchsafeUInt32BE() : reader.readUInt32BE();
+        size_t decompressedSize = version >= 4 ? reader.readSynchsafeUInt32BE() : reader.readUInt32BE();
         if (decompressedSize < m_dataSize) {
             diag.emplace_back(DiagLevel::Critical, "The decompressed size is smaller than the compressed size.", context);
             throw InvalidDataException();
@@ -243,7 +243,7 @@ void Id3v2Frame::parse(BinaryReader &reader, std::uint32_t version, std::uint32_
         reader.read(bufferCompressed.get(), m_dataSize);
         buffer = make_unique<char[]>(decompressedSize);
         switch (
-            uncompress(reinterpret_cast<Bytef *>(buffer.get()), &decompressedSize, reinterpret_cast<Bytef *>(bufferCompressed.get()), m_dataSize)) {
+            zng_uncompress(reinterpret_cast<uint8_t *>(buffer.get()), &decompressedSize, reinterpret_cast<uint8_t *>(bufferCompressed.get()), m_dataSize)) {
         case Z_MEM_ERROR:
             diag.emplace_back(DiagLevel::Critical, "Decompressing failed. The source buffer was too small.", context);
             throw InvalidDataException();
@@ -782,9 +782,9 @@ Id3v2FrameMaker::Id3v2FrameMaker(Id3v2Frame &frame, std::uint8_t version, Diagno
 
     // apply compression if frame should be compressed
     if (version >= 3 && m_frame.isCompressed()) {
-        auto compressedSize = compressBound(m_decompressedSize);
+        auto compressedSize = zng_compressBound(m_decompressedSize);
         auto compressedData = make_unique<char[]>(compressedSize);
-        switch (compress(reinterpret_cast<Bytef *>(compressedData.get()), reinterpret_cast<uLongf *>(&compressedSize),
+        switch (zng_compress(reinterpret_cast<uint8_t *>(compressedData.get()), &compressedSize,
             reinterpret_cast<Bytef *>(m_data.get()), m_decompressedSize)) {
         case Z_MEM_ERROR:
             diag.emplace_back(DiagLevel::Critical, "Decompressing failed. The source buffer was too small.", context);
